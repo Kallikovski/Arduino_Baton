@@ -3,32 +3,7 @@
 #include "Wire.h"
 #include "SPI.h"
 #include "MIDIUSB.h"
-
-#define NOTE_C5   48
-#define NOTE_Db5  49
-#define NOTE_D5   50
-#define NOTE_Eb5  51
-#define NOTE_E5   52
-#define NOTE_F5   53
-#define NOTE_Gb5  54
-#define NOTE_G5   55
-#define NOTE_Ab5  56
-#define NOTE_A5   57
-#define NOTE_Bb5  58
-#define NOTE_B5   59
-
-#define NOTE_C6   60
-#define NOTE_Db6  61
-#define NOTE_D6   62
-#define NOTE_Eb6  63
-#define NOTE_E6   64
-#define NOTE_F6   65
-#define NOTE_Gb6  66
-#define NOTE_G6   67
-#define NOTE_Ab6  68
-#define NOTE_A6   69
-#define NOTE_Bb6  70
-#define NOTE_B6   71
+#include "Notes.h"
 
 #define AHRS false         // Set to false for basic data read
 #define SerialDebug true  // Set to true to get Serial output for debugging
@@ -41,7 +16,7 @@
 
 
 
-int notes[] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5, NOTE_A5, NOTE_B5, NOTE_C6, NOTE_D6, NOTE_E6, NOTE_F6, NOTE_G6, NOTE_A6, NOTE_B6};
+Notes notes = new Notes();
 boolean calibrated=false;
 int currentNote=0;
 int arraySize;
@@ -273,7 +248,9 @@ void loop() {
         Serial.print("Mapped reading = ");
         Serial.println(fsrreading);
         
-        int index = calculateRollIndex(myIMU.roll);
+        int index = notes->get_Note(myIMU.roll); // INDEX
+
+        
         noteOn(0, notes[index], fsrreading); //fsrreading für druck, 127 für konstant
         if(prevIndex!=index){
           noteOff(0, notes[prevIndex], 0);
