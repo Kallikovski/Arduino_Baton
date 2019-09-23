@@ -43,6 +43,7 @@ int notes[] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5, NOTE_A5, NOTE_B5, NO
 boolean calibrated=false;
 int currentNote=0;
 int arraySize;
+int prevIndex = -1;
 
 MPU9250 myIMU(MPU9250_ADDRESS, I2Cport, I2Cclock);
 
@@ -164,7 +165,20 @@ void setup() {
   }
 
     }
+  }
 }
+
+int calculateRollIndex(float roll){
+  int index = (myIMU.roll/10);
+  if(index > 2 && index <16){
+    return index - 2;
+  }
+  else if(index < 2 && index >= 0){
+    return 0;
+  }
+  else if(index > 16 && index < 0){
+    return 14;
+  }
 }
 
 void loop() {
@@ -272,19 +286,18 @@ void loop() {
         Serial.print("rate = ");
         Serial.print((float)myIMU.sumCount / myIMU.sum, 2);
         Serial.println(" Hz");
-        int index = map(myIMU.roll,0,180,0,13);
+        int index = calculateRollIndex(myIMU.roll);
+        noteOn(0, notes[index], 127);
+        if(prevIndex!=index){
+          noteOff(0, notes[prevIndex], 0);
+          prevIndex=index;
+        }
+        Serial.print("I played the note: ");
+        Serial.println(notes[index]);
         Serial.print("INDEX:--------------------------------------\n");
         Serial.print(index);
         Serial.print("-----------\n");
-      }
-        if(index >= 0){
-         noteOn(0, notes[0], 127);
-         Serial.print("I played the note: ");
-         Serial.println(notes[0]);
-        }
-        else{
-          noteOff(0, notes[0], 0);
-        }
+
         //positives Z runter zur Erde
         //yaw= winkel zwischen x achse und magnetischem norden
         //pitch = Winkel zwischen X und Erdboden, zur erde positiv
@@ -295,7 +308,7 @@ void loop() {
         Serial.println(myIMU.roll);
         
       }
-
+    }
       myIMU.count = millis();
     } // if (myIMU.delt_t > 500)
   } // if (!AHRS)
