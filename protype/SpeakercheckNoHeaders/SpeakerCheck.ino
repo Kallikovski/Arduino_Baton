@@ -36,6 +36,7 @@
 #define I2Cclock 400000
 #define I2Cport Wire
 #define MPU9250_ADDRESS MPU9250_ADDRESS_AD0   // Use either this line or the next to select which I2C address your device is using
+#define fsrpin A0
 //#define MPU9250_ADDRESS MPU9250_ADDRESS_AD1
 
 
@@ -44,7 +45,11 @@ int notes[] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5, NOTE_A5, NOTE_B5, NO
 boolean calibrated = false;
 int currentNote = 0;
 int arraySize;
+int fsrreading;
 int prevIndex = INT_MIN;
+int prevPrs = 0;
+int prsTolerance = 15;
+int prsStart = 120;
 
 MPU9250 myIMU(MPU9250_ADDRESS, I2Cport, I2Cclock);
 
@@ -160,6 +165,7 @@ void setup() {
   }
 }
 
+/*
 int calculateRollIndex(float roll) {
   int result = 0;
   Serial.print("ABS Roll/10: ");
@@ -177,7 +183,7 @@ int calculateRollIndex(float roll) {
   Serial.print("RESULT: ");
   Serial.println(result);
   return result;
-}
+}*/
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -193,17 +199,6 @@ void loop() {
     myIMU.ay = (float)myIMU.accelCount[1] * myIMU.aRes; // - myIMU.accelBias[1];
     myIMU.az = (float)myIMU.accelCount[2] * myIMU.aRes; // - myIMU.accelBias[2];
 
-/*
-    // AS
-    Serial.println(abs(myIMU.ax) + abs(myIMU.ay) + abs(myIMU.az));
-    //Serial.print("\t"); Serial.println(myIMU.ay);
-    //Serial.print("\t"); Serial.println(myIMU.az);
-    
-    myIMU.count = millis();
-    delay(100);
-    return;
-
-*/
     myIMU.readGyroData(myIMU.gyroCount);  // Read the x/y/z adc values
 
     // Calculate the gyro value into actual degrees per second
@@ -270,14 +265,36 @@ void loop() {
 
         if (SerialDebug)
         {
+
+           fsrreading = analogRead(fsrpin);
+       
+          Serial.print("Analog reading = ");
+          Serial.println(fsrreading);
+          if(fsrreading>prsStart){
+             fsrreading = map(fsrreading, 0, 1000, 0, 127);
+          }
+          else{
+            fsrreading=0;
+          }
+          Serial.print("Mapped reading = ");
+          Serial.println(fsrreading);
           int index = map(abs(myIMU.roll), 0, 180, 0, arraySize);//calculateRollIndex(abs(myIMU.roll));
           Serial.print("INDEX: ");
           Serial.println(index);
-          noteOn(0, notes[index], 127);
+          Serial.print("PRESSURE: _______________________________");
+          Serial.println(fsrreading);
+          noteOn(0, notes[index], fsrreading);//fsrreading für druck, 127 für konstant
           if (prevIndex != index) {
             noteOff(0, notes[prevIndex], 0);
             prevIndex = index;
           }
+        
+        if(prevPrs>fsrreading+prsTolerance || prevPrs<fsrreading-prsTolerance){
+          noteOff(0, notes[index], 0);
+          noteOn(0, notes[index], fsrreading);
+          prevPrs=fsrreading;
+        }
+        
           /*
           Serial.print("I played the note: ");
           Serial.println(notes[index]);
