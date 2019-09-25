@@ -4,6 +4,10 @@
 #include "SPI.h"
 #include "MIDIUSB.h"
 #include "limits.h"
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
 
 #define NOTE_C5   48
 #define NOTE_Db5  49
@@ -36,11 +40,14 @@
 #define I2Cclock 400000
 #define I2Cport Wire
 #define MPU9250_ADDRESS MPU9250_ADDRESS_AD0   // Use either this line or the next to select which I2C address your device is using
-#define fsrpin A0
-//#define MPU9250_ADDRESS MPU9250_ADDRESS_AD1
 
+#define fsrpin A0 //drucksensor
 
+#define PIXEL_PIN    5  // Digital IO pin connected to the NeoPixels.
 
+#define PIXEL_COUNT 10  // Number of NeoPixels
+
+Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 int notes[] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5, NOTE_A5, NOTE_B5, NOTE_C6, NOTE_D6, NOTE_E6, NOTE_F6, NOTE_G6, NOTE_A6, NOTE_B6};
 boolean calibrated = false;
 int currentNote = 0;
@@ -58,7 +65,7 @@ void setup() {
   arraySize = sizeof(notes) / sizeof(int);
   Wire.begin();
   Serial.begin(38400);
-
+  
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
   Serial.print(F("MPU9250 I AM 0x"));
@@ -163,6 +170,9 @@ void setup() {
 
     }
   }
+  
+  strip.begin(); // Initialize NeoPixel strip object (REQUIRED)
+  strip.show();  // Initialize all pixels to 'off'
 }
 
 /*
@@ -184,6 +194,13 @@ int calculateRollIndex(float roll) {
   Serial.println(result);
   return result;
 }*/
+
+void colorWipe(uint32_t color) {
+  for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
+    strip.setPixelColor(i, color);         //  Set pixel's color (in RAM)
+    strip.show();                          //  Update strip to match
+  }
+}
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -239,7 +256,7 @@ void loop() {
   if (!AHRS)
   {
     myIMU.delt_t = millis() - myIMU.count;
-    if (myIMU.delt_t > 500)
+    if (myIMU.delt_t > 50)
     {
       if (SerialDebug)
       {
@@ -266,7 +283,7 @@ void loop() {
         if (SerialDebug)
         {
 
-           fsrreading = analogRead(fsrpin);
+          fsrreading = analogRead(fsrpin);
        
           Serial.print("Analog reading = ");
           Serial.println(fsrreading);
@@ -283,16 +300,24 @@ void loop() {
           Serial.println(index);
           Serial.print("PRESSURE: _______________________________");
           Serial.println(fsrreading);
-          noteOn(0, notes[index], fsrreading);//fsrreading für druck, 127 für konstant
+          
           if (prevIndex != index) {
             noteOff(0, notes[prevIndex], 0);
             prevIndex = index;
+            if(index%2==0)
+            {
+              colorWipe(strip.Color(255,   0,   0));    // Red on even index
+            }
+            else{
+              colorWipe(strip.Color(0, 255, 0)); //Green on uneven index
+            }
           }
+          noteOn(0, notes[index], fsrreading);//fsrreading für druck, 127 für konstant
         
-        if(prevPrs>fsrreading+prsTolerance || prevPrs<fsrreading-prsTolerance){
-          noteOff(0, notes[index], 0);
-          noteOn(0, notes[index], fsrreading);
-          prevPrs=fsrreading;
+          if(prevPrs>fsrreading+prsTolerance || prevPrs<fsrreading-prsTolerance){
+            noteOff(0, notes[index], 0);
+            noteOn(0, notes[index], fsrreading);
+            prevPrs=fsrreading;
         }
         
           /*
