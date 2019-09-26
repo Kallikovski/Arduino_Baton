@@ -60,6 +60,8 @@ int prevPrs = 0;
 int prsTolerance = 15;
 int prsStart = 120;
 long lightTimer=0;
+boolean pressed= false;
+boolean enteredPressed = false;
 
 
 MPU9250 myIMU(MPU9250_ADDRESS, I2Cport, I2Cclock);
@@ -160,27 +162,43 @@ void setup() {
   strip.show();  // Initialize all pixels to 'off'
 }
 
-void colorWipe(uint32_t color) {
-  for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
-    strip.setPixelColor(i, color);         //  Set pixel's color (in RAM)
+void colorWipe(uint32_t color, int amount) {
+  int halfArray = arraySize/2-1;
+  if(amount<=6){
+    amount=map(amount, 0, halfArray, 0, 10);
   }
+  else{
+    amount = map(amount, halfArray+1, arraySize, 0, 10); 
+  }
+  //amount=map(amount, 0, arraySize, 0, strip.numPixels());
+  for(int i=0; i<amount; i++) { // For each pixel in strip...
+    strip.setPixelColor(i, color);         //  Set pixel's color (in RAM)  
+  }
+  if(amount<strip.numPixels()){
+   for(int k=amount+1; k<strip.numPixels(); k++){
+    strip.setPixelColor(k, (0, 0, 0));
+  }
+  }
+
     strip.show();                          //  Update strip to match
 }
 
-void rainbow(float angle){
-  int red = 255-map(angle, 0, 180, 0, 255);
+void rainbow(float angle, int amount){
+  int red = 255;
   int green=0;
   int blue = 0;
   if(angle<=90){
   green = map(angle, 0, 90, 0, 255);
+  red = 255-map(angle, 0, 180, 0, 255);
   }
   else{
   green=255;
   }
   if(angle>90){
   blue = map(angle, 90, 180, 0, 255);
+  green= 255-map(angle, 90, 180, 0, 255);
   }
-  colorWipe(strip.Color(red, green, blue));
+  colorWipe(strip.Color(red, green, blue), amount);
 }
 
 void loop() {
@@ -266,33 +284,41 @@ void loop() {
 
         
         fsrreading = analogRead(fsrpin);
+        int index = map(abs(myIMU.roll), 0, 180, 0, arraySize);//calculateRollIndex(abs(myIMU.roll));
        
         //Serial.print("Analog reading = ");
         //Serial.println(fsrreading);
         if(fsrreading>prsStart){
+           pressed=true;
            fsrreading = map(fsrreading, 0, 1000, 0, 127);
            }
         else{
+          pressed=false;
+          enteredPressed=false;
+          noteOff(0, notes[index], 0);
           fsrreading=0;
           }
-        //Serial.print("Mapped reading = ");
-        //Serial.println(fsrreading);
-        int index = map(abs(myIMU.roll), 0, 180, 0, arraySize);//calculateRollIndex(abs(myIMU.roll));
+
+
+        
+        rainbow(abs(myIMU.roll), index);
+        
+        if((pressed&&!enteredPressed)||prevIndex!=index){
+          Serial.println("ENTERED PRESSED IF");
+          enteredPressed=true;
         //Serial.print("INDEX: ");
         //Serial.println(index);
-
-        if (prevIndex != index) {
           noteOff(0, notes[prevIndex], 0);
           prevIndex = index;
-          rainbow(abs(myIMU.roll));
+          noteOn(0, notes[index], fsrreading);//fsrreading für druck, 127 für konstant  
         }
-        noteOn(0, notes[index], fsrreading);//fsrreading für druck, 127 für konstant
+
         
-        if(prevPrs>fsrreading+prsTolerance || prevPrs<fsrreading-prsTolerance){
+        /*if(prevPrs>fsrreading+prsTolerance || prevPrs<fsrreading-prsTolerance){
           noteOff(0, notes[index], 0);
           noteOn(0, notes[index], fsrreading);
           prevPrs=fsrreading;
-        }
+        }*/
 
           //positives Z runter zur Erde
           //yaw= winkel zwischen x achse und magnetischem norden
