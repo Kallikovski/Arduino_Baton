@@ -179,7 +179,6 @@ void colorWipe(uint32_t color, int amount) {
     strip.setPixelColor(k, (0, 0, 0));
   }
   }
-
     strip.show();                          //  Update strip to match
 }
 
@@ -304,7 +303,7 @@ void loop() {
         rainbow(abs(myIMU.roll), index);
         
         if((pressed&&!enteredPressed)||prevIndex!=index){
-          Serial.println("ENTERED PRESSED IF");
+          //Serial.println("ENTERED PRESSED IF");
           enteredPressed=true;
         //Serial.print("INDEX: ");
         //Serial.println(index);
