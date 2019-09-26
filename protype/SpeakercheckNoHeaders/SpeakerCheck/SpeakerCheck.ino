@@ -47,6 +47,8 @@
 
 #define PIXEL_COUNT 10  // Number of NeoPixels
 
+#define buttonPin A3
+
 Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 int notes[] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5, NOTE_A5, NOTE_B5, NOTE_C6, NOTE_D6, NOTE_E6, NOTE_F6, NOTE_G6, NOTE_A6, NOTE_B6};
 boolean calibrated = false;
@@ -65,6 +67,7 @@ MPU9250 myIMU(MPU9250_ADDRESS, I2Cport, I2Cclock);
 void setup() {
   delay(5000);
   arraySize = sizeof(notes) / sizeof(int);
+  pinMode(buttonPin, INPUT_PULLUP);
   Wire.begin();
   Serial.begin(38400);
   
@@ -190,6 +193,8 @@ void loop() {
   // put your main code here, to run repeatedly:
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
+  int now = millis()
+  
   if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
     myIMU.readAccelData(myIMU.accelCount);  // Read the x/y/z adc values
@@ -263,6 +268,10 @@ void loop() {
 
 
 
+        Serial.print("BUTTON IST AN?: ");
+        Serial.println(digitalRead(buttonPin));
+
+        
         fsrreading = analogRead(fsrpin);
        
         Serial.print("Analog reading = ");
@@ -311,6 +320,8 @@ void loop() {
       myIMU.count = millis();
     } // if (myIMU.delt_t > 500)
   } // if (!AHRS)
+  int then = millis()- now;
+  Serial.print(then);
   delay(20);
 }
 
