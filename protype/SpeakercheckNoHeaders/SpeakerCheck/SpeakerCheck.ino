@@ -180,12 +180,6 @@ void rainbow(float angle){
   if(angle>90){
   blue = map(angle, 90, 180, 0, 255);
   }
-  Serial.print("Red: ");
-  Serial.print(red);
-  Serial.print(", Green: ");
-  Serial.print(green);
-  Serial.print(", Blue: ");
-  Serial.println(blue);
   colorWipe(strip.Color(red, green, blue));
 }
 
@@ -193,8 +187,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
-  int now = millis()
-  
+    
   if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
     myIMU.readAccelData(myIMU.accelCount);  // Read the x/y/z adc values
@@ -245,7 +238,7 @@ void loop() {
   if (!AHRS)
   {
     myIMU.delt_t = millis() - myIMU.count;
-    if (myIMU.delt_t > 500)
+    if (myIMU.delt_t > 50)
     {
         myIMU.yaw   = atan2(2.0f * (*(getQ() + 1) * *(getQ() + 2) + *getQ()
                                     * *(getQ() + 3)), *getQ() * *getQ() + * (getQ() + 1)
@@ -268,25 +261,25 @@ void loop() {
 
 
 
-        Serial.print("BUTTON IST AN?: ");
-        Serial.println(digitalRead(buttonPin));
+        //Serial.print("BUTTON IST AN?: ");
+        //Serial.println(digitalRead(buttonPin));
 
         
         fsrreading = analogRead(fsrpin);
        
-        Serial.print("Analog reading = ");
-        Serial.println(fsrreading);
+        //Serial.print("Analog reading = ");
+        //Serial.println(fsrreading);
         if(fsrreading>prsStart){
            fsrreading = map(fsrreading, 0, 1000, 0, 127);
            }
         else{
           fsrreading=0;
           }
-        Serial.print("Mapped reading = ");
-        Serial.println(fsrreading);
+        //Serial.print("Mapped reading = ");
+        //Serial.println(fsrreading);
         int index = map(abs(myIMU.roll), 0, 180, 0, arraySize);//calculateRollIndex(abs(myIMU.roll));
-        Serial.print("INDEX: ");
-        Serial.println(index);
+        //Serial.print("INDEX: ");
+        //Serial.println(index);
 
         if (prevIndex != index) {
           noteOff(0, notes[prevIndex], 0);
@@ -320,8 +313,6 @@ void loop() {
       myIMU.count = millis();
     } // if (myIMU.delt_t > 500)
   } // if (!AHRS)
-  int then = millis()- now;
-  Serial.print(then);
   delay(20);
 }
 
