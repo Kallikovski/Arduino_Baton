@@ -53,9 +53,9 @@ Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 int notes[] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5, NOTE_A5, NOTE_B5, NOTE_C6, NOTE_D6, NOTE_E6, NOTE_F6, NOTE_G6, NOTE_A6, NOTE_B6};
 boolean calibrated = false;
 int currentNote = 0;
-int arraySize;
+
 int fsrreading;
-int prevIndex = INT_MIN;
+int prevNote = INT_MIN;
 int prevPrs = 0;
 int prsTolerance = 15;
 int prsStart = 120;
@@ -85,9 +85,21 @@ class Notes {
     }){}
     
     int get_Note(int roll, int angleLow, int angleHigh){
-      unsigned int index = map(abs(roll), angleLow, angleHigh, 0, sizeof(notes));
+      unsigned int index = map(abs(roll), angleLow, angleHigh, 0, (sizeof(notes)/sizeof(int)));
       unsigned int note = notes[index];
+      Serial.println(index);
+      Serial.println(roll);
       return note;
+    }
+    int get_NoteIndex(unsigned int note){
+      for(int i=0; i<sizeof(notes); ++i){
+        if(notes[i] ==note){
+          return i;
+        }
+      }
+    }
+    int getSizeOfNotes(){
+      return (sizeof(notes)/sizeof(int));
     }
   
   private:
@@ -99,7 +111,6 @@ Notes* notesObj;
 void setup() {
   delay(5000);
   notesObj = new Notes();
-  arraySize = sizeof(notes) / sizeof(int);
   pinMode(buttonPin, INPUT_PULLUP);
   Wire.begin();
   Serial.begin(38400);
@@ -139,8 +150,10 @@ void setup() {
   strip.show();  // Initialize all pixels to 'off'
 }
 
-void colorWipe(uint32_t color, int amount) {
-  int halfArray = arraySize/2-1;
+void colorWipe(uint32_t color,unsigned int currentNote) {
+  int amount=notesObj->get_NoteIndex(currentNote);
+  int arraySize=notesObj->getSizeOfNotes();
+  int halfArray=arraySize/2;
   if(amount<=6){
     amount=map(amount, 0, halfArray, 0, 10);
   }
@@ -159,7 +172,7 @@ void colorWipe(uint32_t color, int amount) {
     strip.show();                          //  Update strip to match
 }
 
-void rainbow(float angle, int amount){
+void rainbow(float angle,unsigned int currentNote){
   int red = 255;
   int green=0;
   int blue = 0;
@@ -174,7 +187,7 @@ void rainbow(float angle, int amount){
   blue = map(angle, 90, 180, 0, 255);
   green= 255-map(angle, 90, 180, 0, 255);
   }
-  colorWipe(strip.Color(red, green, blue), amount);
+  colorWipe(strip.Color(red, green, blue), currentNote);
 }
 
 void loop() {    
@@ -225,7 +238,7 @@ void loop() {
         myIMU.roll *= RAD_TO_DEG;
 
         fsrreading = analogRead(fsrpin);
-        int index = map(abs(myIMU.roll), 0, 180, 0, arraySize);//calculateRollIndex(abs(myIMU.roll));
+        currentNote= notesObj->get_Note(myIMU.roll,0,180);
        
         if(fsrreading>prsStart){
            pressed=true;
@@ -234,17 +247,17 @@ void loop() {
         else{
           pressed=false;
           enteredPressed=false;
-          noteOff(0, notes[index], 0);
+          noteOff(0, currentNote, 0);
           fsrreading=0;
           }
 
-        rainbow(abs(myIMU.roll), index);
+        rainbow(abs(myIMU.roll), currentNote);
         
-        if((pressed&&!enteredPressed)||prevIndex!=index){
+        if((pressed&&!enteredPressed)||prevNote!=currentNote){
           enteredPressed=true;
-          noteOff(0, notes[prevIndex], 0);
-          prevIndex = index;
-          noteOn(0, notes[index], fsrreading);//fsrreading für druck, 127 für konstant  
+          noteOff(0, prevNote, 0);
+          prevNote = currentNote;          
+          noteOn(0, currentNote, fsrreading);//fsrreading für druck, 127 für konstant  
         }      
       myIMU.count = millis();
     } // if (myIMU.delt_t > 50)
