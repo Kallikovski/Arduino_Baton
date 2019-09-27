@@ -63,11 +63,42 @@ long lightTimer=0;
 boolean pressed= false;
 boolean enteredPressed = false;
 
-
 MPU9250 myIMU(MPU9250_ADDRESS, I2Cport, I2Cclock);
+
+class Notes {
+  public:
+    Notes():notes({ //Note array
+        NOTE_C5,
+        NOTE_D5,
+        NOTE_E5,
+        NOTE_F5,
+        NOTE_G5,
+        NOTE_A5,
+        NOTE_B5,
+        NOTE_C6,
+        NOTE_D6,
+        NOTE_E6,
+        NOTE_F6,
+        NOTE_G6,
+        NOTE_A6,
+        NOTE_B6
+    }){}
+    
+    int get_Note(int roll, int angleLow, int angleHigh){
+      unsigned int index = map(abs(roll), angleLow, angleHigh, 0, sizeof(notes));
+      unsigned int note = notes[index];
+      return note;
+    }
+  
+  private:
+    unsigned int notes[14]; // C-Array that defines amount of Notes
+};
+
+Notes* notesObj;
 
 void setup() {
   delay(5000);
+  notesObj = new Notes();
   arraySize = sizeof(notes) / sizeof(int);
   pinMode(buttonPin, INPUT_PULLUP);
   Wire.begin();
