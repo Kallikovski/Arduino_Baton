@@ -87,8 +87,6 @@ class Notes {
     int get_Note(int roll, int angleLow, int angleHigh){
       unsigned int index = map(abs(roll), angleLow, angleHigh, 0, (sizeof(notes)/sizeof(int)));
       unsigned int note = notes[index];
-      Serial.println(index);
-      Serial.println(roll);
       return note;
     }
     int get_NoteIndex(unsigned int note){
@@ -190,6 +188,18 @@ void rainbow(float angle,unsigned int currentNote){
   colorWipe(strip.Color(red, green, blue), currentNote);
 }
 
+void noteOn(byte channel, byte pitch, byte velocity) {
+  midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
+  MidiUSB.sendMIDI(noteOn);
+  MidiUSB.flush();
+}
+
+void noteOff(byte channel, byte pitch, byte velocity) {
+  midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
+  MidiUSB.sendMIDI(noteOff);
+  MidiUSB.flush();
+}
+
 void loop() {    
   if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {
@@ -220,7 +230,7 @@ void loop() {
                          myIMU.mx, myIMU.mz, myIMU.deltat);
 
     myIMU.delt_t = millis() - myIMU.count;
-    if (myIMU.delt_t > 50)
+    if (myIMU.delt_t > 20)
     {
         myIMU.yaw   = atan2(2.0f * (*(getQ() + 1) * *(getQ() + 2) + *getQ()
                                     * *(getQ() + 3)), *getQ() * *getQ() + * (getQ() + 1)
@@ -261,17 +271,5 @@ void loop() {
         }      
       myIMU.count = millis();
     } // if (myIMU.delt_t > 50)
-  delay(20);
-}
-
-void noteOn(byte channel, byte pitch, byte velocity) {
-  midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
-  MidiUSB.sendMIDI(noteOn);
-  MidiUSB.flush();
-}
-
-void noteOff(byte channel, byte pitch, byte velocity) {
-  midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
-  MidiUSB.sendMIDI(noteOff);
-  MidiUSB.flush();
+  delay(10);
 }
